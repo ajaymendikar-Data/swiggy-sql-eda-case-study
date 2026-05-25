@@ -1,0 +1,168 @@
+-- Dimensions_Tabels----
+
+Create table dim_Date(
+date_id int auto_increment primary key,
+full_date date,
+year int,
+month int,
+month_name varchar(20),
+Quarter int,
+day int,
+week int
+);
+
+select * from dim_Date;
+
+-- dim_location
+CREATE TABLE dim_location (
+    location_id INT AUTO_INCREMENT PRIMARY KEY,
+    State VARCHAR(100),
+    City VARCHAR(100),
+    location VARCHAR(200)
+);
+
+-- dim_restaurant
+CREATE TABLE dim_restaurant (
+    restaurant_id INT AUTO_INCREMENT PRIMARY KEY,
+    Restaurant_Name VARCHAR(200)
+);
+
+-- dim_category
+CREATE TABLE dim_category (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    Category VARCHAR(200)
+);
+
+-- dim_dish
+CREATE TABLE dim_dish (
+    dish_id INT AUTO_INCREMENT PRIMARY KEY,
+    Dish_Name VARCHAR(200)
+);
+select * from swiggy_data;
+select * from dim_date;
+
+-- inserting Data into Tabels -- 
+
+INSERT INTO dim_date 
+(full_date, year, month, month_name, quarter, day, week)
+
+SELECT DISTINCT
+    order_date,
+    YEAR(order_date),
+    MONTH(order_date),
+    MONTHNAME(order_date),
+    QUARTER(order_date),
+    DAY(order_date),
+    WEEK(order_date)
+
+FROM swiggy_data;
+
+select * from dim_date;
+
+
+select * from dim_location;
+
+INSERT INTO dim_location (state, city, location)
+SELECT DISTINCT state, city, location
+FROM swiggy_data;
+
+
+
+INSERT INTO dim_restaurant (restaurant_name)
+SELECT DISTINCT restaurant_name
+FROM swiggy_data;
+
+
+INSERT INTO dim_category (category)
+SELECT DISTINCT category
+FROM swiggy_data;
+
+INSERT INTO dim_dish (dish_name)
+SELECT DISTINCT dish_name
+FROM swiggy_data;
+
+
+-- fact table --- 
+
+
+CREATE TABLE fact_swiggy_orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    date_id INT,
+    location_id INT,
+    restaurant_id INT,
+    category_id INT,
+    dish_id INT,
+
+    price DECIMAL(10,2),
+    rating DECIMAL(2,1),
+    rating_count INT,
+
+    FOREIGN KEY (date_id) REFERENCES dim_date(date_id),
+    FOREIGN KEY (location_id) REFERENCES dim_location(location_id),
+    FOREIGN KEY (restaurant_id) REFERENCES dim_restaurant(restaurant_id),
+    FOREIGN KEY (category_id) REFERENCES dim_category(category_id),
+    FOREIGN KEY (dish_id) REFERENCES dim_dish(dish_id)
+);
+select * from swiggy_data;
+select * from dim_date;
+
+-- Inseting Data into Fact Tables --
+
+INSERT INTO fact_swiggy_orders (
+    date_id,
+    location_id,
+    restaurant_id,
+    category_id,
+    dish_id,
+    price,
+    rating,
+    rating_count
+)
+SELECT 
+    d.date_id,
+    l.location_id,
+    r.restaurant_id,
+    c.category_id,
+    di.dish_id,
+    s.price,
+    s.rating,
+    s.rating_count
+
+FROM swiggy_data s
+
+JOIN dim_date d 
+    ON s.order_date = d.full_date
+
+JOIN dim_location l 
+    ON s.state = l.state 
+    AND s.city = l.city 
+    AND s.location = l.location
+
+JOIN dim_restaurant r 
+    ON s.restaurant_name = r.restaurant_name
+
+JOIN dim_category c 
+    ON s.category = c.category
+
+JOIN dim_dish di 
+    ON s.dish_name = di.dish_name;
+
+-- joining all the dim's tables  and fact tabel 
+
+select * from fact_swiggy_orders f 
+
+JOIN dim_date d 
+    ON f.date_id = d.date_id
+
+JOIN dim_location l 
+    ON f.location_id = l.location_id
+
+JOIN dim_restaurant r 
+    ON f.restaurant_id = r.restaurant_id
+
+JOIN dim_category c 
+    ON f.category_id = c.category_id
+
+JOIN dim_dish di 
+    ON f.dish_id = di.dish_id;
